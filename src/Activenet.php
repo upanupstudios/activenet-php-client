@@ -11,7 +11,8 @@ class Activenet
   private $config;
   private $httpClient;
 
-  private $version = '2.0';
+  private $url = 'https://api.amp.active.com/anet-systemapi-ca-sec';
+  private $version = 'v1';
 
   public function __construct(Config $config, ClientInterface $httpClient)
   {
@@ -29,20 +30,27 @@ class Activenet
     return $this->httpClient;
   }
 
-  public function status()
+  public function organization()
   {
     try {
-      $request = $this->httpClient->request('GET', $this->getConfig()->getApiUrl().'/api/'.$this->version.'/Status', [
+      $url = $this->url.'/'.$this->getConfig()->getOrganizationId().'/api/'.$this->version.'/organization';
+
+      $request = $this->httpClient->request('GET', $url, [
         'headers' => [
           'Accept' => 'application/json',
           'Content-Type' => 'application/json',
-          'X-Client-Number' => $this->getConfig()->getClientNumber(),
-          'X-Access-Key' => $this->getConfig()->getApiKey()
+        ],
+        'query' => [
+          'api_key' => $this->getConfig()->getApiKey(),
+          'sig' => hash('sha256', $this->getConfig()->getApiKey().$this->getConfig()->getSecret().time())
         ]
       ]);
 
-      $response = $request->getBody();
-      $response = $response->__toString();
+      // Get body
+      $body = $request->getBody();
+
+      // Decode and return as array
+      $response = json_decode($body->__toString(), TRUE);
     } catch (RequestException $exception) {
       $response = $exception->getMessage();
     }
@@ -50,23 +58,64 @@ class Activenet
     return $response;
   }
 
-  public function query(string $query)
+  /**
+   * ACTIVE Net System REST API calls are limited to 2 calls per second.
+   * If the call rate exceeds 2 calls per second, then the server will return an HTTP 403 status code.
+   */
+  public function request(string $method, string $uri, array $options = [])
   {
-    try {
-      $body = Psr7\Utils::streamFor(json_encode(array('QueryString' => $query)));
+    $response = [];
 
-      $request = $this->httpClient->request('POST', $this->getConfig()->getApiUrl().'/api/'.$this->version.'/B2C/Query', [
-        'headers' => [
-          'Accept' => 'application/json',
-          'Content-Type' => 'application/json',
-          'X-Client-Number' => $this->getConfig()->getClientNumber(),
-          'X-Access-Key' => $this->getConfig()->getApiKey(),
-        ],
-        'body' => $body
+    try {
+      $url = $this->url.'/'.$this->getConfig()->getOrganizationId().'/api/'.$this->version.'/'.$uri;
+
+      $headers = [
+        'Accept' => 'application/json',
+        'Content-Type' => 'application/json',
+      ];
+
+      if(!empty($options['headers']) && is_array($options['headers'])) {
+        $headers = array_merge($headers, $options['headers']);
+      }
+
+      $query = [
+        'api_key' => $this->getConfig()->getApiKey(),
+        'sig' => hash('sha256', $this->getConfig()->getApiKey().$this->getConfig()->getSecret().time())
+      ];
+
+      if(!empty($options['query']) && is_array($options['query'])) {
+        $query = array_merge($query, $options['query']);
+      }
+
+      // Start microtime, return in seconds
+      $mtime_start = microtime(true);
+
+      $request = $this->httpClient->request($method, $url, [
+        'headers' => $headers,
+        'query' => $query
       ]);
 
-      $response = $request->getBody();
-      $response = $response->__toString();
+      // Get body
+      $body = $request->getBody();
+
+      // Decode and return as array
+      $response = json_decode($body->__toString(), TRUE);
+
+      // End microtime, return in seconds
+      $mtime_end = microtime(true);
+
+      // Calulate difference in seconds
+      $diff_mtime = $mtime_end - $mtime_start;
+
+      if($diff_mtime < 0.5) {
+        // Sleep until after 0.5 seconds
+        $mtime = (0.5 - $diff_mtime) * 1000000;
+
+        // Add time to make sure it's past the 0.5 seconds
+        $mtime += 100000;
+
+        usleep($mtime);
+      }
     } catch (RequestException $exception) {
       $response = $exception->getMessage();
     }
@@ -84,8 +133,16 @@ class Activenet
     $api = null;
 
     switch ($name) {
+      case 'General':
+        $api = new General($this);
+        break;
+
+      case 'Activity':
+        $api = new Activity($this);
+        break;
+
       default:
-        throw new \InvalidArgumentException("Undefined api instance called: '$name'.");
+        throw new \InvalidArgumentException();
     }
 
     return $api;

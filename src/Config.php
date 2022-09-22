@@ -4,31 +4,23 @@ namespace Upanupstudios\Activenet\Php\Client;
 
 final class Config
 {
-  private $apiUrl;
-  private $clientNumber;
+  private $organizationId;
   private $apiKey;
+  private $secret;
 
-  public function __construct(string $apiUrl, string $clientNumber, string $apiKey)
+  public function __construct(string $organizationId, string $apiKey, string $secret)
   {
-    $this->apiUrl = $apiUrl;
-    $this->clientNumber = $clientNumber;
+    $this->organizationId = $organizationId;
     $this->apiKey = $apiKey;
+    $this->secret = $secret;
   }
 
   /**
-   * Get API URL.
+   * Get Organization ID.
    */
-  public function getApiUrl(): string
+  public function getOrganizationId(): string
   {
-      return $this->apiUrl;
-  }
-
-  /**
-   * Get Client Number.
-   */
-  public function getClientNumber(): string
-  {
-      return $this->clientNumber;
+      return $this->organizationId;
   }
 
   /**
@@ -37,5 +29,13 @@ final class Config
   public function getApiKey(): string
   {
       return $this->apiKey;
+  }
+
+  /**
+   * Get Secret.
+   */
+  public function getSecret(): string
+  {
+      return $this->secret;
   }
 }
