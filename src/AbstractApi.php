@@ -16,11 +16,11 @@ abstract class AbstractApi
 
   protected function processResponse($response) {
     $body = [];
-    
+
     if(!empty($response) && is_array($response)) {
       if(!empty($response['headers']) && $response['headers']['response_code'] == '0000') {
         $body = $response['body'];
-        
+
         $response = $body;
       }
     }

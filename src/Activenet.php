@@ -6,7 +6,7 @@ use GuzzleHttp\ClientInterface;
 use GuzzleHttp\Exception\RequestException;
 
 /**
- * ActiveNet Class.
+ * ActiveNet class.
  */
 class Activenet {
 
@@ -148,7 +148,7 @@ class Activenet {
         $mtime = (0.5 - $diff_mtime) * 1000000;
 
         // Add time to make sure it's past the 0.5 seconds.
-        $mtime += 100000;
+        $mtime += 1000000;
 
         // Cast to int.
         usleep((int) $mtime);
