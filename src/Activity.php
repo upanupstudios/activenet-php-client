@@ -12,7 +12,7 @@ class Activity extends AbstractApi {
    *
    * @var int
    */
-  protected $total_records_per_page = 500;
+  protected $totalRecordsPerPage = 500;
 
   /**
    * Response body.
@@ -24,11 +24,11 @@ class Activity extends AbstractApi {
   /**
    * Returns a list of activities for your request parameters.
    */
-  public function GetActivities($query = [], $page_info = []) {
+  public function getActivities($query = [], $page_info = []) {
     // Default page info.
     $default_page_info = [
     // @todo Add object parameter
-      'total_records_per_page' => $this->total_records_per_page,
+      'total_records_per_page' => $this->totalRecordsPerPage,
       'page_number' => 1,
     ];
 
@@ -54,15 +54,13 @@ class Activity extends AbstractApi {
           $page_info = ['page_number' => $response['headers']['page_info']['page_number'] + 1];
 
           // Call activities again (recursive) on the second page.
-          // @todo Is there a way to exit out and request again?
-          $this->GetActivities($query, $page_info);
+          return $this->GetActivities($query, $page_info);
         }
 
-        $response = $this->body;
-      }
-      else {
-        $response = $this->body;
-        // @todo Response code is not 0! Call again? repeat? provide error?
+        // Return if we have all the records.
+        if ($response['headers']['page_info']['total_records'] == count($this->body)) {
+          return $this->body;
+        }
       }
     }
 
@@ -72,7 +70,7 @@ class Activity extends AbstractApi {
   /**
    * Returns details of an activity.
    */
-  public function GetActivityDetail($activity_id) {
+  public function getActivityDetail($activity_id) {
     $response = $this->client->request('GET', 'activities/' . $activity_id);
 
     $response = $this->processResponse($response);
@@ -83,7 +81,7 @@ class Activity extends AbstractApi {
   /**
    * Returns fees of an activity.
    */
-  public function GetActivityFees($activity_id) {
+  public function getActivityFees($activity_id) {
     $response = $this->client->request('GET', 'activities/' . $activity_id . '/fees');
 
     $response = $this->processResponse($response);
@@ -94,7 +92,7 @@ class Activity extends AbstractApi {
   /**
    * Returns a list of activity types.
    */
-  public function GetActivityTypes($params = []) {
+  public function getActivityTypes($params = []) {
     $response = $this->client->request('GET', 'activitytypes');
 
     $response = $this->processResponse($response);
@@ -105,7 +103,7 @@ class Activity extends AbstractApi {
   /**
    * Returns a list of activity categories for your organization.
    */
-  public function GetActivityCategories($params = []) {
+  public function getActivityCategories($params = []) {
     $response = $this->client->request('GET', 'activitycategories');
 
     $response = $this->processResponse($response);
@@ -116,7 +114,7 @@ class Activity extends AbstractApi {
   /**
    * Returns a list of activity other categories for your organization.
    */
-  public function GetActivityOtherCategories($params = []) {
+  public function getActivityOtherCategories($params = []) {
     $response = $this->client->request('GET', 'activityothercategories');
 
     $response = $this->processResponse($response);
